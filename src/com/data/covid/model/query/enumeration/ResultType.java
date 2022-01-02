@@ -1,4 +1,4 @@
-package com.data.covid.model.query;
+package com.data.covid.model.query.enumeration;
 
 import com.data.covid.model.dto.Summary;
 
@@ -25,7 +25,7 @@ public enum ResultType {
         this.accumulator = accumulator;
     }
 
-    public BiFunction<List<Summary>, Summary, List<Summary>> getAccumulator() {
-        return accumulator;
+    public List<Summary> getAccumulator(List<Summary> list, Summary summary) {
+        return this.accumulator.apply(list, summary);
     }
 }

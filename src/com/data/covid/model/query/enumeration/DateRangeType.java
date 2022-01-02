@@ -1,4 +1,4 @@
-package com.data.covid.model.query;
+package com.data.covid.model.query.enumeration;
 
 import java.time.LocalDate;
 import java.util.function.BiFunction;
@@ -17,7 +17,7 @@ public enum DateRangeType {
         this.skipper = skipper;
     }
 
-    public BiFunction<LocalDate, Long, LocalDate> getSkipper() {
-        return skipper;
+    public LocalDate toNewDate(LocalDate start, long offset) {
+        return this.skipper.apply(start, offset);
     }
 }

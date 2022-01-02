@@ -4,6 +4,7 @@ import com.data.covid.model.dto.DateRange;
 import com.data.covid.model.dto.Record;
 import com.data.covid.model.dto.Summary;
 import com.data.covid.model.query.display.ChartDisplay;
+import com.data.covid.model.query.enumeration.*;
 import com.data.covid.utils.DateUtils;
 import com.data.covid.utils.InputUtils;
 import com.data.covid.utils.StreamUtils;
@@ -13,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -37,20 +39,24 @@ public class Query {
         this.records = records;
         this.locations = records.stream().map(Record::getLocation).collect(Collectors.toSet());
 
-        this.clear();
-        for (InputType inputType : InputType.values()) inputType.getInputAction().accept(this);
-        this.execute();
+        this.start();
     }
 
     public static Query withSource(List<Record> records) {
         return new Query(records);
     }
 
+    private void start() {
+        this.clear();
+        for (InputType inputType : InputType.values()) this.runAction(inputType);
+        this.execute();
+    }
+
     private void edit() {
         System.out.println(this);
         InputUtils.repeat("Finished editing", () -> {
             InputType inputType = InputUtils.getEnum("input type to edit", InputType.class);
-            inputType.getInputAction().accept(this);
+            this.runAction(inputType);
             System.out.println(this);
         });
     }
@@ -68,37 +74,43 @@ public class Query {
         // iterate chosen date range
         List<Summary> summaries = DateUtils.dateStream(this.dateRange)
                 // split date groups by chosen grouping
-                .collect(Collectors.groupingBy(date -> this.groupingType.getGrouper().asGroup(this, date)))
-                .keySet().stream()
+                .map(date -> this.groupingType.asRange(this, date)).distinct()
                 // produce summary of data in group
-                .map(range -> new Summary(range,
-                        // iterate date range to ensure no date missing in between
-                        DateUtils.dateStream(range)
-                                // filter record exists
-                                .filter(recordsByDate::containsKey)
-                                // get record by date
-                                .map(recordsByDate::get)
-                                // get chosen metric
-                                .map(this.metric.getGetter())
-                                // sum total, handle discrete and accumulative metric data
-                                .reduce(0, this.metric.getReducer())))
+                .map(range -> new Summary(range, this.calculateValue(range, recordsByDate)))
                 // sort group to ensure correctness of accumulator
-                .sorted(Summary.COMPARATOR)
+                .sorted()
                 // produce summary between groups with chosen result type
-                .reduce(new ArrayList<>(), this.resultType.getAccumulator(), StreamUtils::listCombiner);
+                .reduce(new ArrayList<>(), this.resultType::getAccumulator, StreamUtils::listCombiner);
         // display report
-        System.out.println(this.displayType.getDisplayMethod().print(summaries));
+        this.displayType.print(summaries);
         System.out.println();
     }
 
-    /* package */ void location() {
+    private int calculateValue(DateRange range, Map<LocalDate, Record> recordsByDate) {
+        // iterate date range to ensure no date missing in between
+        return DateUtils.dateStream(range)
+                // filter record exists
+                .filter(recordsByDate::containsKey)
+                // get record by date
+                .map(recordsByDate::get)
+                // get chosen metric
+                .map(this.metric::getValue)
+                // sum total, handle discrete and accumulative metric data
+                .reduce(0, this.metric::calculateTotal);
+    }
+
+    private void runAction(InputType inputType) {
+        inputType.inputAction.accept(this);
+    }
+
+    private void location() {
         String instruction = "Choose country/continent: ";
         String errorText = "Country/continent not found.";
         this.location = InputUtils.getCollectionItem(instruction, errorText, this.locations, Function.identity());
         System.out.println();
     }
 
-    /* package */ void dateRangeType() {
+    private void dateRangeType() {
         DateRangeType dateRangeType = InputUtils.getEnum("date range type", DateRangeType.class);
         System.out.println();
 
@@ -109,21 +121,21 @@ public class Query {
 
         LocalDate date2;
         if (dateRangeType == DateRangeType.PAIR) {
-            instruction = "Choose the other date (dd/MM/yyyy): ";
+            instruction = "Choose the other date (MM/dd/yyyy): ";
             date2 = InputUtils.getDate(instruction, errorText);
         } else {
             String text = dateRangeType.name().toLowerCase().replaceFirst("_", " ");
             instruction = String.format("Number of %s the chosen date: ", text);
             errorText = "Must be positive integer.";
             int offset = InputUtils.getInt(instruction, errorText, i -> i >= 0);
-            date2 = dateRangeType.getSkipper().apply(date1, (long) offset);
+            date2 = dateRangeType.toNewDate(date1, offset);
         }
         this.dateRange = new DateRange(date1, date2);
         this.numRecords = DateUtils.countInclusive(this.dateRange);
         System.out.println();
     }
 
-    /* package */ void grouping() {
+    private void grouping() {
         this.groupingType = InputUtils.getEnum("grouping", GroupingType.class);
         System.out.println();
 
@@ -150,17 +162,17 @@ public class Query {
         System.out.println();
     }
 
-    /* package */ void metric() {
+    private void metric() {
         this.metric = InputUtils.getEnum("metric", Metric.class);
         System.out.println();
     }
 
-    /* package */ void resultType() {
+    private void resultType() {
         this.resultType = InputUtils.getEnum("result type", ResultType.class);
         System.out.println();
     }
 
-    /* package */ void displayType() {
+    private void displayType() {
         this.displayType = InputUtils.getEnum("display type", DisplayType.class);
         System.out.println();
     }
@@ -201,5 +213,21 @@ public class Query {
                 ", resultType=" + resultType +
                 ", displayType=" + displayType +
                 '}';
+    }
+
+    private enum InputType {
+
+        LOCATION(Query::location),
+        DATE_RANGE_TYPE(Query::dateRangeType),
+        GROUPING(Query::grouping),
+        METRIC(Query::metric),
+        RESULT_TYPE(Query::resultType),
+        DISPLAY_TYPE(Query::displayType);
+
+        private final Consumer<Query> inputAction;
+
+        InputType(Consumer<Query> inputAction) {
+            this.inputAction = inputAction;
+        }
     }
 }

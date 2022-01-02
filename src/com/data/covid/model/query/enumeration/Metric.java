@@ -1,4 +1,4 @@
-package com.data.covid.model.query;
+package com.data.covid.model.query.enumeration;
 
 import com.data.covid.model.dto.Record;
 
@@ -19,11 +19,11 @@ public enum Metric {
         this.reducer = reducer;
     }
 
-    public Function<Record, Integer> getGetter() {
-        return getter;
+    public int getValue(Record record) {
+        return this.getter.apply(record);
     }
 
-    public BinaryOperator<Integer> getReducer() {
-        return reducer;
+    public int calculateTotal(int a, int b) {
+        return this.reducer.apply(a, b);
     }
 }

@@ -2,7 +2,9 @@ package com.data.covid.model.dto;
 
 import java.util.Comparator;
 
-public class Summary {
+public class Summary implements Comparable<Summary> {
+
+    private static final Comparator<Summary> COMPARATOR = Comparator.comparing(s -> s.range.getStart());
 
     private final DateRange range;
     private int value;
@@ -24,8 +26,6 @@ public class Summary {
         this.value = value;
     }
 
-    public static final Comparator<Summary> COMPARATOR = Comparator.comparing(s -> s.range.getStart());
-
     @Override
     public String toString() {
         return "Summary{" +
@@ -33,5 +33,9 @@ public class Summary {
                 ", value=" + value +
                 '}';
     }
-}
 
+    @Override
+    public int compareTo(Summary that) {
+        return COMPARATOR.compare(this, that);
+    }
+}

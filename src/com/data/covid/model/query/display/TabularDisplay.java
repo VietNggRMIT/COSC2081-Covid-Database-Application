@@ -18,7 +18,7 @@ public class TabularDisplay implements DisplayMethod {
     }
 
     @Override
-    public String print(List<Summary> summaries) {
+    public String asString(List<Summary> summaries) {
         StringJoiner joiner = new StringJoiner("\n");
         joiner.add(this.separator);
         joiner.add("|          Range          |   Value   |");

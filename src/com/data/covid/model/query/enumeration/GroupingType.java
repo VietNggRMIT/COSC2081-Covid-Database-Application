@@ -1,9 +1,13 @@
-package com.data.covid.model.query;
+package com.data.covid.model.query.enumeration;
 
+import com.data.covid.model.dto.DateRange;
+import com.data.covid.model.query.Query;
 import com.data.covid.model.query.grouping.CountGrouping;
 import com.data.covid.model.query.grouping.Grouping;
 import com.data.covid.model.query.grouping.SingleGrouping;
 import com.data.covid.model.query.grouping.SizeGrouping;
+
+import java.time.LocalDate;
 
 public enum GroupingType {
 
@@ -17,7 +21,7 @@ public enum GroupingType {
         this.grouping = grouping;
     }
 
-    public Grouping getGrouper() {
-        return grouping;
+    public DateRange asRange(Query query, LocalDate date) {
+        return this.grouping.asGroup(query, date);
     }
 }

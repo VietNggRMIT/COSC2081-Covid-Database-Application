@@ -38,7 +38,7 @@ public class InputUtils {
                 int i = Integer.parseInt(SCANNER.nextLine().trim());
                 if (!predicate.test(i)) throw new UnsupportedOperationException();
                 return i;
-            } catch (NumberFormatException e) {
+            } catch (Exception e) {
                 System.out.println(errorText + " Please try again.");
             }
         }

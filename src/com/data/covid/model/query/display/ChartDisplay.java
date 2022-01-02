@@ -19,7 +19,7 @@ public class ChartDisplay implements DisplayMethod {
     private final char[][] chart = this.getDefaultBoard();
 
     @Override
-    public String print(List<Summary> summaries) {
+    public String asString(List<Summary> summaries) {
         Map<Integer, IntRange> yValues = new HashMap<>();
         // plot point
         if (!summaries.isEmpty()) {
