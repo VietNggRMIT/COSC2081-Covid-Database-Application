@@ -36,7 +36,9 @@ public class Query {
     private DisplayType displayType;
 
     public Query(List<Record> records) {
+        // passing records in query, allowing the user to change input query later on
         this.records = records;
+        // map to set for performance (hash search instead of strings)
         this.locations = records.stream().map(Record::getLocation).collect(Collectors.toSet());
 
         this.start();
@@ -54,6 +56,7 @@ public class Query {
 
     private void edit() {
         System.out.println(this);
+        // ask user after query everytime if they need to edit
         InputUtils.repeat("Finished editing", () -> {
             InputType inputType = InputUtils.getEnum("input type to edit", InputType.class);
             this.runAction(inputType);
@@ -71,7 +74,8 @@ public class Query {
                 // produce date-record map for lookup record by date
                 .collect(Collectors.toMap(Record::getDate, Function.identity()));
 
-        // iterate chosen date range
+        // process group data
+        // iterate chosen date range, creating a stream for all the selected dates
         List<Summary> summaries = DateUtils.dateStream(this.dateRange)
                 // split date groups by chosen grouping
                 .map(date -> this.groupingType.asRange(this, date)).distinct()
@@ -89,13 +93,14 @@ public class Query {
     private int calculateValue(DateRange range, Map<LocalDate, Record> recordsByDate) {
         // iterate date range to ensure no date missing in between
         return DateUtils.dateStream(range)
-                // filter record exists
+                // filter record that exists, ignore no record (value 0 does not affect result)
                 .filter(recordsByDate::containsKey)
                 // get record by date
                 .map(recordsByDate::get)
                 // get chosen metric
                 .map(this.metric::getValue)
-                // sum total, handle discrete and accumulative metric data
+                // sum total, handle discrete (new total) and accumulative (up to) metric data
+                // returns one sum total value
                 .reduce(0, this.metric::calculateTotal);
     }
 
@@ -103,6 +108,7 @@ public class Query {
         inputType.inputAction.accept(this);
     }
 
+    // user inputs
     private void location() {
         String instruction = "Choose country/continent: ";
         String errorText = "Country/continent not found.";
@@ -121,7 +127,7 @@ public class Query {
 
         LocalDate date2;
         if (dateRangeType == DateRangeType.PAIR) {
-            instruction = "Choose the other date (MM/dd/yyyy): ";
+            instruction = "Choose the other date (dd/MM/yyyy): ";
             date2 = InputUtils.getDate(instruction, errorText);
         } else {
             String text = dateRangeType.name().toLowerCase().replaceFirst("_", " ");
@@ -154,6 +160,7 @@ public class Query {
             case NUMBER_OF_DAYS:
                 instruction = "Choose number of days in group: ";
                 errorText = String.format("Must be positive integer divided %s.", this.numRecords);
+                // check to see if division have any remainders
                 this.groupingValue = InputUtils.getInt(instruction, errorText, i -> i >= 0 && this.numRecords % i == 0);
                 this.minGroupSize = this.groupingValue;
                 break;

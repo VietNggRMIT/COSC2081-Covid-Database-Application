@@ -10,9 +10,11 @@ import java.util.stream.IntStream;
 
 public class ChartDisplay implements DisplayMethod {
 
+    // 23 rows and 79 columns for plotting
     public static final int MAX_CHART_COLS = 79;
     public static final int MAX_CHART_ROWS = 23;
 
+    //row offset for displaying 2 digits
     private static final int ROW_OFFSET = 3;
     private static final int OFFSET = 1;
 
@@ -21,17 +23,20 @@ public class ChartDisplay implements DisplayMethod {
     @Override
     public String asString(List<Summary> summaries) {
         Map<Integer, IntRange> yValues = new HashMap<>();
-        // plot point
+        // calculation for plotting points
         if (!summaries.isEmpty()) {
             // evenly spaced column
             int colSpacing = MAX_CHART_COLS / summaries.size();
+            // min value for column label
             int min = summaries.stream().mapToInt(Summary::getValue).min().orElse(0);
+            // max value for column label
             int max = summaries.stream().mapToInt(Summary::getValue).max().orElse(0);
-            // get scale, handle constant values
+            // get chart scale, handle constant values
             float scale = max == min ? 0 : (float) MAX_CHART_ROWS / (max - min);
             for (int i = 0; i < summaries.size(); i++) {
                 int col = OFFSET + colSpacing * i;
                 // evenly spaced row
+                // raw for current value
                 int raw = summaries.get(i).getValue();
                 int row = Math.round(scale * (raw - min));
                 row = Math.min(row, MAX_CHART_ROWS - 1);
@@ -39,7 +44,7 @@ public class ChartDisplay implements DisplayMethod {
                 // adjust value range label of row
                 IntRange bounds = yValues.computeIfAbsent(row, v -> new IntRange(raw));
                 yValues.put(row, new IntRange(Math.min(bounds.getStart(), raw), Math.max(bounds.getEnd(), raw)));
-                // add col label
+                // add col label, if higher than 1 digit, next digit display right below
                 if (i < 10) {
                     this.chart[1][col] = (char) (i + '0');
                 } else {
@@ -50,7 +55,7 @@ public class ChartDisplay implements DisplayMethod {
                 this.chart[row][col] = '*';
             }
         }
-        // draw chart
+        // draw chart, 21 spacing for y-axis labels
         String chartString = IntStream.iterate(ROW_OFFSET - 1 + MAX_CHART_ROWS, i -> i - 1)
                 .limit(ROW_OFFSET + MAX_CHART_ROWS)
                 .mapToObj(i -> String.format("%21s%s",

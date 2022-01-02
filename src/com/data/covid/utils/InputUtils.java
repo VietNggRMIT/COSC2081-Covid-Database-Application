@@ -7,6 +7,8 @@ import java.util.Scanner;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+
+//user inputs loops
 public class InputUtils {
 
     private static final Scanner SCANNER = new Scanner(System.in);

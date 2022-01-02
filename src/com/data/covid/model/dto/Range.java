@@ -2,6 +2,7 @@ package com.data.covid.model.dto;
 
 import java.util.Objects;
 
+// T for generic data type, minimizes code duplication for different data types
 public abstract class Range<T> {
 
     private final T start;
